@@ -1,0 +1,589 @@
+\documentclass[letterpaper,10pt]{article}
+%\usepackage{usenix}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{endnotes}
+\usepackage{graphicx}
+\usepackage{float}
+
+\usepackage{enumitem}
+%\setlist{nosep} 
+
+\usepackage{titlesec}
+\setcounter{secnumdepth}{4}
+
+\usepackage{hyperref} % for referencing item
+\usepackage{amssymb} % for mathbb{}
+
+\usepackage{listings} % for code
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+
+
+\begin{document}
+
+%don't want date printed
+\date{}
+
+%make title bold and 14 pt font (Latex default is non-bold, 16 pt)
+\title{\Large \bf Instill Symbolic Knowledge into Connectionist Models}
+
+%for single author (just remove % characters)
+\author{
+{\rm Jianyu Zhan}\\
+nasa4836@gmail.com
+}
+
+\maketitle
+
+% Use the following at camera-ready time to suppress page numbers.
+% Comment it out when you first submit the paper for review.
+\thispagestyle{empty}
+
+
+\subsection*{Abstract}
+
+Artificial neural networks ---  \emph{a.k.a.} the \emph{connectionist systems} --- exhibit 
+powerful expressiveness,  desirable efficiency and satisfactory robustness, it is thus
+believed that it should be combined with symbolic systems --- another paradigm for pursuing
+human-level intelligence --- to construct a more intelligent agent, which is capable of learning and
+reasoning. In this article, we discuss the merits and limitations of both
+paradigms, and discuss the challenges confronted while integrating them and the approaches
+to tackle them. The contribution of this article is to propose a new approach to address one of
+the key challenges: instilling symbolic knowledge into connectionist models. The author believes
+this would be a promising direction, because it is inspired by the transitive isomorphism among
+\emph{formal logic}, \emph{programming} and \emph{neural networks}, and has the natural duality
+in it, which would facilitate the reverse operation: distilling learned knowledge from the connectionist
+models into symbolic ones, that is to acquire new propositions.
+
+\section{Introduction}\label{intro_sec}
+
+The breakthrough of training of deep belief networks\cite{hinton2006fast,
+bengio2007greedy} in 2006 marks the revival of neural networks, and the
+triumph of a convolutional network called AlexNet\cite{Krizhevsky2012}
+at ILSVRC2012\footnote{ImageNet Large Scale Visual Recognition Challenge}
+Contest ignites the sheer enthusiasm of extensive research on deep neural
+networks architecture in academia and industry. The ensuing marvelous advance
+of neural networks in various areas ranging from speech recognition, human
+level machine translation, handwritten text generation, to image classification,
+image captioning, and even widely believed unbeatable game playing like go, marks
+the arrival of a new era for deep learning. 
+
+The overwhelming success of deep learning in such broad areas at a short amount
+of time period really piques people's interest of knowing the underlying magic
+and the power of deep neural networks. The usual informal
+narrative of neural networks depicts it as a repeated process of warping of data
+in geometric space such that it can learn the true representation. The famous
+\emph{Universal Approximation Theorem}\cite{hornik1989multilayer, franklin1989approximate}
+formally depicts this physical analogy and guarantees that a two-layer perceptron
+with sufficiently many hidden units can approximate any \emph{borel measurable function}
+to any desired degree of accuracy. But this perspective fails to capture the essence
+of deep architecture. Actually, kernel machines, such as Support Vector Machines(SVMs)
+are shallow architectures, and the similar \emph{Universal Approximation Theorem} for SVM has
+also been derived\cite{hammer2003note}, but ``shallow nature of kernel machines leads
+to fundamentally inefficient representation"\cite{bengio2007scaling}. The real power of
+neural networks lies in its \emph{deepness}. Some recent researches on this topic have
+revealed some theoretical insights on the expressiveness and efficiency of deep
+architectures\cite{bianchini2014complexity, lin2016does, poggio2017and}. We will
+elaborate on this in later section.
+
+The exciting reality and promising theoretical result of deep neural networks symbolizes
+the the third-time Connectionism resurgence, the first-time being in 1950s\cite{frank1957perceptron}
+at the dawn of Artificial Intelligence, and the last time being in 1980s, with the discovery of
+a new efficient training method called \textit{BackPropogation}\cite{rumelhart1988learning}.
+Human-like intelligence is always our ultimate pursuit, and the ups and downs of the
+neural networks - the pivotal connectionist model represent the spiral advance of human's
+understanding of human intelligence. Now it seems a correct direction, with the incomparable feat
+ranging from the perceptual tasks(i.e., vision, audition), which are, by Hubert Dreyfus's argument\cite{dreyfus1972computers},
+\emph{unconscious instincts}, to cognitive tasks(e.g., machine translation). But we have a little
+unease in that some more intelligent tasks are still in doldrums. That is reasoning, which is ``algebraically manipulating previously acquired knowledge
+in order to answer a new question"\cite{bottou2014machine}. The adjective \emph{algebraic} unveils its
+symbolic essence. Symbolism was the dominant paradigm of AI research from the mid-1950s to the late 1980s,
+and it was believed that human intelligence can be modeled on manipulation of symbols. 
+The \emph{Physical Symbol System Hypothesis}\cite{newell1980physical, newell1976computer} asserts that
+``A physical symbol system has the \emph{necessary} and \emph{sufficient} means for general intelligent action".
+
+The \emph{Physical Symbol System Hypothesis} seems quite a strong assertion. Given that currently subdued 
+symbolic AI research compared to the versatile deep neural networks, a natural question pops up: 
+Can we somehow combine the Connectionism with Symbolism to achieve strong AI?  The answer seems
+promisingly yes! There was a long-existent AI community striving for \emph{Neural-Symbolic Integration}\cite{garcez2008neural},
+to promote the research in current AI weakness: learning and reasoning. But the viability doesn't warrant
+the necessity of doing so, the argument of favoritism of this method would be the goal of this article.
+ 
+In this article, we will devote to the discussion of \emph{Neural-Symbolic Integration} and try to shed light on 
+a viable direction of research on the integration of symbolic knowledge into the neural networks to bring
+the ability of reasoning in the connectionist model, which lays the foundation for a possible and viable
+route to build a more intelligent agent. Section \ref{cm_ss_sec} is an elaborated discussion the merits of connectionist
+models and the limitations of pure symbolic systems. Section \ref{nsi_sec} discuss \emph{Neural-Symbolic Integration},
+and challenges of integrating them, and the existent approaches to tackle them. Section \ref{nrd_sec} proposes a new research 
+approach that highlights a viable model for integration of symbolic knowledge into the neural network model. Section \ref{conclusion_sec}
+draws some conclusions.
+  
+\section{Connectionist Models and Symbolic Systems}\label{cm_ss_sec}
+
+\subsection{Merits of Connectionist Models}\label{nn_merits}
+
+We will start with the discussion of merits of the connectionist models
+from the perspective of what properties of a general intelligent agent
+should be expected to have, and as we will see in later section, this
+sheds light on how we can do to instill the symbolic logic knowledge
+into neural networks. We discuss several merits of the neural networks. 
+
+\subsubsection{Expressiveness}
+
+Though the exact biological model that human intelligence builds on has not been
+totally deciphered, it is no doubt that the biologically inspired neural networks
+does draw a profound analogy between its structure and human brain neurons
+inter-connections(Figure \ref{fig:nn_neuron_analogy_analogy}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{nn_neuron_analogy.png}
+\caption{The analogy between biological neuron (left) and its mathematical model (right)\protect\footnotemark}
+\label{fig:nn_neuron_analogy_analogy}
+\end{figure}
+
+\footnotetext{This figure is from \protect\url{https://cs231n.github.io/neural-networks-1/.}}
+
+More interestingly, a neuroscience paper\cite{sharma2000induction} on Nature that
+presents an experiment, in which a ferret's auditory cortex was rewired to
+make retinal projections route into auditory pathway, and in the end the ferret
+induces visual orientation. This shows some dynamic rewire of neuron connections,
+which suggest the human brain is to some degree a \emph{universal learning machine}.
+The \emph{Universal Approximation Theorem} provides theoretical guarantee for neural
+networks' representation capacity. Sure we could not draw a direct parallel
+between these two concepts, but it at least provides a necessary condition for
+neural networks to act as a intelligent agent.
+
+\subsubsection{Efficiency}\label{efficiency_of_nn_sec}
+
+For the efficiency metric, we take the amount of resources(neurons, parameters,
+etc) to measure neural networks' efficiency. Informally speaking, to learn the
+manifold, the higher degree of curvature of the manifold(more twist or turns),
+the more parameters(thus neurons) are needed to cover them, in turn more
+training examples are needed. More specifically, ``they would require a large
+number of pieces to be well represented by a piecewise-linear approximation.
+Since the number of pieces can be made to grow exponentially with the number of
+input variables, this problem is directly connected with the well-known curse
+of dimensionality for classical algorithms"\cite{bengio2007scaling}.
+
+The method to overcome this problem, which actually makes deep neural networks
+stand out, is composition of many non-linearities. This is called the
+\emph{combinatorial swindle}\cite{lin2016does}, that is, replacing exponentiation
+with multiplication. Take the example from \cite{lin2016does}: if there are say
+$n = 106$ inputs taking $v = 256$ values each, this swindle cuts the number of
+parameters from $v^n$ to $v \times n$ times some constant factor. This same paper
+provides the perspective from physics to elucidate the success of 
+compositionality in neural networks: the hierarchical process. Indeed, this
+casual but powerful pattern exists everywhere in the physical world, for
+example, the object hierarchy: elementary particles forms atoms, which in turn
+form molecules, which in turn forms cells, etc. This hierarchical captures the
+very nature of the compositionality: the lower layers depicts the concrete and
+simple concepts, while as the layers stack up, more abstract and complex concepts
+emerge. For those curious, this paper\cite{zeiler2014visualizing} visually
+demonstrates how a convolutinoal neural network works and exhibits the idea we
+are talking about here.
+
+This importance of compositionality is also captured and emphasized on by another
+paper\cite{poggio2017and} investigating the black-box of neural networks. This
+might provide another perspective of compositionality: recurrent neural networks(RNNs),
+which are loop-wired feed-forward neural networks, are practically universal
+Turing computers. And ``all computable functions (by a Turing machine) are
+recursive, that is composed of a small set of primitive operations."\cite{poggio2017and}.
+
+\subsubsection{Robustness}
+
+For robustness, the author would like to highlight two points: the \emph{elaboration
+tolerance} and \emph{graceful degradation}.
+
+The concept of \emph{elaboration tolerance} comes from John MaCathy, which is
+described as ``A formalism is elaboration tolerant to the extent that it is convenient to modify a set of facts expressed in the formalism to take into account
+new phenomena or changed circumstances"\cite{mccarthy1998elaboration}.
+Among other things, one of the properties of elaboration tolerance
+is generalization, which we would not elaborate here, but the author would like to point
+out that a plethora of research on \emph{regularization}\cite{zhang2016understanding}, which
+are addressing the generalization problem.
+Another hot topic that relates to elaboration tolerance is \emph{Transfer Learning}\cite{pan2010survey}, which is trying to more efficiently solve new tasks by
+leveraging experiences learned from old tasks.
+
+The concept of \emph{graceful degradation} is defined as the tendency of neural
+networks to tolerate damage, be it biological or artificial. Human
+electroencephalogram(EEG) reveals that brain neural networks are simultaneously
+active, and parts of it damage would only vitiate the functionality that area
+it is responsible for. The same requirement is posed on the artificial neural
+network, and there is a powerful regularization method\cite{Srivastava2014} by randomly masking out
+some non-output neuron and effectively create a bagging of several sub-networks
+during training, which precipitates ``making predictions by averaging over multiple
+stochastic decisions implements a form of bagging with parameter sharing"\cite{goodfellow2016deep}. This device provides really nice semantics of graceful
+degradation when deployed.
+
+\subsection{Symbolic Systems}
+
+\subsubsection{Brief Introduction}
+
+Symbolic systems were proposed by Allen Newell and Herbert Simon in
+1976\cite{newell1976computer}. In this paper, they claimed ``Symbols lie at the
+root of intelligent action, which is, of course, the primary topic of
+artificial intelligence."To further facilitate later discussion, we briefly define a symbolic system. 
+
+
+\begin{defn}
+A \emph{symbolic system} consists of:
+\begin{enumerate}[label=(\alph*), noitemsep]
+\item \textbf{Symbols}: a set of entities, which are physical patterns.
+\item \textbf{Expressions}: composed of a number of instances (or tokens) of symbols related in some physical way.
+\item \textbf{Processes}: operations on expressions to produce other expressions: creation, modification, reproduction and destruction.
+\end{enumerate}
+\end{defn}
+
+\noindent And it possess two properties\cite{newell1976computer}:
+
+\begin{enumerate}[label={}]
+\item \textbf{Designation}: An expression designates an object if, given the expression, the system can either affect the object itself or behave in ways dependent on the object.
+\item \textbf{Interpretation}: The system can interpret an expression if the expression designates a process and if, given the expression, the system can carry out the process. 
+\end{enumerate}
+
+\noindent Note these two properties ``must also meet a number of additional requirements, of completeness and closure"\cite{newell1976computer}.\\
+
+Based on this definition, we claim that such a symbolic system solves problems by generating potential solutions with \emph{heuristic search}, more specifically, by extracting useful information from a problem domain and using that information to guide their search.
+
+
+\subsubsection{The Limitation of Symbolic Systems}\label{ss_limits}
+
+While exercising above symbolic systems as an intelligent agent, one would quickly confront two tricky and profound problems.
+
+One is the combinatorial explosion problem, which is used to describe the rapid growth of the complexity of the search space of the problem domain. This problem is usually mitigated by pruning to eliminate some search directions totally or by carefully refined the heuristic search method.
+
+The other one is a more profound problem, called \emph{Symbol Grounding Problem}, first described by John Searle in his famous mental experiment \emph{The Chinese Room Argument} in 1980\cite{searle1980minds}, and latter specifically addressed by Stevan Harnad in \cite{harnad1990symbol}. The key idea behind this experiment is that by simply following the formal manipulation rule of the symbolic system, the one in the Chinese Room can answer the Chinese question raised by an outside observer without even knowing Chinese.That is, the ``semantic interpretation of a formal symbol system is not intrinsic to the system, but just parasitic on the meanings in our heads"\cite{harnad1990symbol}.
+
+There are several grounding schemes proposed to address this problem, and they
+are beyond the scope of this article. Interested readers shall be pointed to
+Charles Sanders Peirce's and Stevan Harnad's works. As for our purpose of \emph{Neural-Symbolic Integration}, the author would like to highlight Harnad's proposal that cognition
+should be modeled by \emph{top-down}(symbolic) approach and meet \emph{bottom-up} (sensory)
+approaches somewhere in between\cite{harnad1990symbol}. This looks like a hybrid 
+\emph{Neural-Symbolic Integration} scheme, and we would like to investigate the
+integrated scheme. But his idea did shed light on further research direction.
+
+\section{Neural-Symbolic Integration}\label{nsi_sec}
+
+Now we can turn to discuss the \emph{Neural-Symbolic Integration}. The pursuit of
+human intelligence had been a driving force in establishing Artificial Intelligence(AI)
+as a discipline at the Dartmouth Conference in the summer of 1956. However, its
+progress was gradually subdued during the ensuing half century in comparison to
+what we call the Weak AI, as is witnessed especially by the current rejuvenation
+of Deep Learning. It turned out that the grand goal of AGI would be too hard to
+achieve than was expected. This is definitely a cross-discipline endeavor should 
+it be realized. But a clear direction towards AI is that such a intelligent agent
+must have the ability to learn from examples and store the learned knowledge and 
+then use the knowledge to reason upon encountering new environment or to make
+decision for activities. This is what \emph{Neural-Symbolic Integration} seeks for. the author summarizes the reasons below:
+
+\begin{enumerate}[leftmargin=*, noitemsep]
+\item We have discussed the blossom of Deep Learning in various areas in the Introduction section and also have showed the merits of neural networks as a full-fledged and robust learning agent in Section \ref{nn_merits}.
+\item The \emph{Physical Symbol System Hypothesis} asserts a strong \emph{necessary} and \emph{sufficient} condition guarantee of symbolic system for an intelligent agent.
+\item One of the serious problem of symbolic system is the \emph{Symbol Grounding Problem}, which we have discussed in Section \ref{ss_limits}. Harnad proposed\cite{harnad1990symbol} that symbolic representations should be grounded bottom-up by means of non-symbolic representations:iconic representations --- sensory projections of objects --- and categorical representations --- invariant features of objects somehow warrants the integration with connectionist models.
+\end{enumerate}
+
+\subsection{Schematic Neural-Symbolic Integration}\label{schematic_sec}
+
+So what does a Neural-Symbolic system looks like? A great survey paper on this
+topic\cite{bader2005dimensions} depicts a Neural-Symbolic learning cycle as in
+Figure \ref{fig:ns_cycle}. The left-side Symbolic System is usually expressed
+in formal logic, a mature field that has been studied extensively and is based
+on solid mathematics logic background. This field is called \emph{Logic
+Programming}\cite{lloyd2012foundations} when we write these formal logic clauses
+in programming language. The right-side Connectionist System is the (deep) neural
+networks that we are familiar with. The important part is the \emph{Representation}
+arrow going from left to right, that is to instill the symbolic information into 
+Connectionist System, which is huge challenge that we will discuss in detail later.
+The opposite \emph{Extraction} arrow going from right to left is to distill the
+\emph{distributed} knowledge that is learned during training or inference(Reasoning)
+out of Connectionist System. By \emph{distributed} the author means the learning process of
+a neural network is basically adjusting the weight of connections between neurons,
+and so the learned knowledge in stored distributively across all connections.
+This \emph{Extraction} procedure is important and valuable, because it broadens our
+understanding of the knowledge that we might have never learned from the symbolic
+system before. We can further process these acquired knowledge by human experts
+and then feed back to the system. This closed circle empowers the Neural-Symbolic
+system the ability that pure symbolic systems or pure connectionist systems have
+never achieved. Note that these two arrows is to some degree a duality property,
+and that may inspire us that it would better to have sort of “symmetry” between these two opposite processes. 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{neural-symbolic-learning-cycle.png}
+\caption{A neural symbolic learning cycle\protect\footnotemark}
+\label{fig:ns_cycle}
+\end{figure}
+
+\footnotetext{This figure is from \protect\cite{bader2005dimensions}.}
+
+\subsection{Challenges and Related Works}
+
+Now we can discuss the challenges of integrating symbolic knowledge into connectionist models, that is the \emph{Representation} arrow in Figure \ref{fig:ns_cycle}. 
+
+In contrary to the order we define the First-Order and Propositional Logic in last section, the first symbolic system we tackle is the simpler Propositional Logic. 
+
+\subsubsection{First-Order and Propositional Logic Preliminaries}\label{fol_def_sec}
+
+To help readers to form a more concrete idea of what the challenges are while
+integrating symbolic knowledge into connectionist models and the approaches to
+tackle them, this section briefly recalls notations and definitions concerning a symbolic system, called \emph{First-Order Logic}, in a top-down method for introducing concepts. For more rigorous definitions, please refer to \cite{lloyd2012foundations}.
+
+In such a First-Order Logic symbolic system, we operates on a textit{logic program } $\mathcal{P}$.
+
+\begin{defn}
+A \textit{logic program} $\mathcal{P}$ is a finite sequence of alphabet letters, which consist of classes of symbols:
+\begin{enumerate}[label=(\alph*), noitemsep]
+\item \textbf{variables}(\textit{e.g., a, x}); 
+\item \textbf{constants}(\textit{e.g., 1, Apple});
+\item \textbf{function symbols}(\textit{e.g., f, g});
+\item \textbf{predicate symbols}(\textit{e.g., isHuman(x)});
+\item \textbf{connectives}: $\neg, \wedge, \vee, \leftarrow, \Leftrightarrow$, which mean \emph{negate}, \emph{and}, \emph{or}, \emph{implication} and \emph{equivalent}, resepctively;
+\item \textbf{quantifiers}: $\forall, \exists$, which means \emph{existential} and \emph{universal}, respectively.
+\end{enumerate}
+\end{defn}
+
+A logic program $\mathcal{P}$ structurally consists of a finite set of \textit{clauses}.
+
+\begin{defn}
+A \textit{clause} is of form:
+\begin{center}	
+$A \leftarrow L_1, L_2, ..., L_n$, $n \ge 0$;\\
+\end{center}
+\noindent
+where $A$ is \emph{head} and $L_1, ... ,L_n$ is \emph{body} of the \emph{clause}. $A$ is a \textit{atom}, and $L_i, 1 \le i \le n$ is a \textit{literal}.
+\end{defn}
+
+
+\begin{defn}
+An \emph{atom} $a$ is short for \emph{atomic formula}, defined as $p(t_1,..., t_n)$, where $p$ is a \emph{n-ary predicate symbol}, and $t_1,...,t_n$ are \emph{terms}.
+\end{defn}
+
+\begin{defn}
+A \emph{term} is defined recursively as follows:
+\begin{enumerate}[label=(\alph*), noitemsep]
+\item A \emph{variable} is a \emph{term};
+\item A \emph{constant} is a \emph{term};
+\item $f$ is an \emph{n-ary function symbol} and $t_1,...,t_n$ are \emph{terms}, then $f(t_1,...,t_n)$ is a \emph{term}.
+\end{enumerate}
+\end{defn}
+
+\begin{defn}
+A \emph{literal} is an \emph{atom} or the negation($\neg$) of an \emph{atom}.
+\end{defn}
+
+We have defined (not comprehensively) the declarative syntax of a \emph{logic program} $\mathcal{P}$. As for its semantics, or its meaning, we need to assign truth value($True$ or $False$) to the the \emph{head} and \emph{body} of each \emph{clause}. This is called \emph{interpretion}. We concern a very simple one called \emph{Herbrand Interpretation}.
+
+
+\begin{defn}
+A \emph{Herbrand Interpretation} $I$ for a First-Order program is like this:
+\begin{enumerate}[label=(\alph*), noitemsep]
+\item every \emph{connective} and every \emph{quantifier} is interpreted as its fixed meaning, as is listed above;
+\item every \emph{constant} is interpreted as itself;
+\item every \emph{function symbol} is interpreted as the function that applies it
+\item every \emph{predicate symbol} is interpreted by \textbf{grouding} the variables, that is binding \emph{variables} with \emph{constants}, to make it an \emph{atom}.\label{itm:4}
+\end{enumerate}
+\end{defn}
+
+So, according to \ref{itm:4}, we need to pre-assign meanings(truth values) for these \emph{atoms}. This set of \emph{atoms} is called \emph{Herbrand Base}, denoted as $B_p$.
+
+Now that we have this \textbf{countable}(but not finite) set \emph{Herbrand Base}
+, then by the definition of \emph{Herbrand ￼Interpretation}, we have a countable set of \emph{Herbrand Interpretation}. So by this means, we have an interpretation for a \emph{clause}:
+
+\begin{defn}
+	The \emph{meaning function}, or \emph{semantic operator} $T_{\mathcal{P}}: 2^{B_p} \rightarrow 2^{B_P}$ is defined as follows: Let $I$ be an interpretation and $A$ a \emph{grounded atom}. $A \in T_p(I)$ iff there exists a ground instance  $A \leftarrow L_1, L_2, ..., L_n$ of a clause in $\mathcal{P}$ such that for all $1 \le i \le n$ we find $L_i \in I$.
+\end{defn}
+
+Finally, we talk about a special case of \emph{First-Order Logic}, that is \emph{Propositional Logic}. It is defined by trimming the \emph{predicate symbols} and \emph{quantifiers} from \emph{First-Order Logic}. It is much simpler and thus weaker in its expressiveness.
+
+\subsubsection{Challenges and Solutions}
+
+Now we can discuss the challenges of integrating symbolic knowledge into connectionist models, that is the \emph{Representation} arrow in Figure \ref{fig:ns_cycle}. 
+
+In contrary to the order we define the \emph{First-Order} and \emph{Propositional Logic} in last section, the first symbolic system we tackle is the simpler \emph{Propositional Logic}. 
+
+\paragraph{Propositional Logic Case}\leavevmode\\
+
+Now that \emph{Propositional Logic} is a trimmed-off version of \emph{First-Order
+Logic}, per the definition of \emph{Herbrand Interpretation} above, it has no
+\emph{Herbrand Base}, so we only need to consider the \textbf{finite} number of 
+\emph{function symbols} and \textbf{finite} number of \emph{constants}, which
+means there are \textbf{finite} number of \emph{atoms}, which in turn means there
+are only \textbf{finite} number of interpretations, thus a \textbf{finite} set of \emph{meaning functions} for \emph{clauses}. 
+
+So we can easily encode a \emph{Propositional Logic} program by encoding its \emph{meaning function} $T_{\mathcal{P}}$, instead of the program itself. More specifically:
+
+\begin{enumerate}[noitemsep]
+\item In the input layer(the body), we assign one neuron for each \emph{atom}.
+\item In the output layer(the head), we also assign one neuron for each \emph{atom}. The activation of neurons in these two layers represent the truth value of the corresponding \emph{atom}.
+\item For each \emph{clause} of a \emph{logic program} $\mathcal{P}$, there is a hidden layer neuron.
+\item Connect the neuron in input layer(the body) to the hidden layer neuron, then to corresponding neuron in output layer(the head), according to the \emph{clause}.
+\end{enumerate}
+
+See Figure \ref{fig:pp_example} for an example. This approach is adopted by \cite{holldobler1991towards}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{propositional_example.png}
+\caption{A Propositional program and the corresponding neural network\protect\footnotemark}
+\label{fig:pp_example}
+\end{figure}
+
+\footnotetext{This figure is from \protect\cite{bader2005dimensions}.}
+
+\paragraph{First-Order Logic Case}\label{fol_sec}\leavevmode\\
+
+This case is much trickier. Again, the idea is to represent the \emph{meaning
+function} $T_{\mathcal{P}}: I_{\mathcal{P}} \rightarrow I_{\mathcal{P}}$ instead of the program $\mathcal{P}$ directly. The
+problem is that now we have \textbf{infinite}(but countable) number of
+\emph{Herbrand Intepretation}. So it is not computationally feasible to encode
+the $T_{\mathcal{P}}$ as is done for the \emph{Propositional Logic} case.
+
+To tackle this problem, \cite{holldobler1999approximating} maps the infinite but
+countable interpretations to real numbers by a \emph{injective} mapping
+$R: 2^{B_p} \rightarrow \mathbb{R}$. This is feasible because the interpretation
+set is countable. And then it can map the \emph{meaning function} $T_{\mathcal{P}}$ to a real
+value function $\overline{f}_p$, as is depicted in Figure \ref{fig:tp_fp}. After
+we have this real value function $\overline{f}_p$, according to
+\cite{franklin1989approximate}, we can construct a \emph{feed forward network}
+that approximates $\overline{f}_p$ to this arbitrary degree of accuracy.
+So basically, \cite{holldobler1999approximating} has formally proved
+theoretically that such a representation for a \emph{First-Order Logic} program
+exists. However, this paper doesn't propose a constructive approach to do so. And
+also note that this paper constrains the kind of \emph{First-Order Logic} program
+to be a so-called \emph{acyclic program}. 
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{tp_fp.png}
+\caption{The relation between $T_{\mathcal{P}}$ and $f_{\mathcal{P}}$ \protect\footnotemark}
+\label{fig:tp_fp}
+\end{figure}
+
+\footnotetext{This figure is from \cite{holldobler1999approximating}.}
+
+Later in \cite{bader2005integrating}, such a constructive approach has be proposed, following the scheme in \cite{holldobler1999approximating}. But this approach has some limitation due to the problem that the hardware floating point precision is very limited.
+
+There is another approach presented in \cite{bader2005computing}, which representing a \emph{First-Order Logic} program by means of \emph{fibring neural networks}. In a \emph{fibring neural network}, the activation of a neuron may influence other neruons by changing their weights. This approach also followed the the scheme in \cite{holldobler1999approximating}. All in all, this approach addresses this problem in a compositional way of combining simple modules(fibring neural networks) into a ensemble.
+
+\section{New Research Direction}\label{nrd_sec}
+
+In this section, the author would like to propose a new research direction for integrating integrating symbolic knowledge into connectionist models.
+
+\subsection{Problems of Existing Approaches}
+
+In Section \ref{fol_sec}, we discuss the two constructive approaches to represent a \emph{First-Order Logic} program and their problems. The problem exist in that fact that both follow the scheme in \cite{holldobler1999approximating}, that is, by encoding its \emph{meaning function} $T_{\mathcal{P}}$, instead of the program itself. This is a ingenious idea though, however, in order to do so, a constriant was posed on the class of  \emph{First-Order Logic} programs that can be represented by neural networks:  \emph{acyclic logic programs}\cite{apt1991acyclic}.  They are a subclass of the locally stratified programs, which enjoy several desirable properties like the fact the for each acyclic program $\mathcal{P}$ the meaning function $T_{\mathcal{P}}$ has a unique fixed point $M_{\mathcal{P}}$,  which is a \emph{minimal model}(\emph{i.e., interpratation}). Put it simple, the contraint of \emph{acyclic program} is to ensure $T_{\mathcal{P}}$ contracts to a fixed meaning.
+
+The other problem is that to map $T_{\mathcal{P}}$ to real numbers in order to tackle the \emph{infinite} \emph{Herbrand Intepretation} problem,  the $R: 2^{B_p} \rightarrow \mathbb{R}$ is required to be \emph{injective}, which would be too strong.
+
+The author tries to propose a new research direction, that we just encode the program itself instead of the meaning funciton $T_{\mathcal{P}}$. By this way, we can naturally eschew the problems above. The new idea comes fromand \emph{The Curry-Howard Isomorphism}\cite{sorensen2006lectures} and the relation between neural networks and Functional Programming languages\cite{olah2015neural}.
+
+\subsection{The Curry-Howard Isomorphism}\label{chi_sec}
+
+The awesome \emph{Curry-Howard Isomorphism} is the relationship between \emph{computer programs} and \emph{mathematical proofs},  first discovered by the American mathematician Haskell Curry and logician William Alvin Howard. It unveils the profound isomorphism between two seemly unrelated fields.
+
+To put it simplely and informally, it states that \emph{a proof is a program, and the type of the program is analogous to the theorem(proposition) to be proved}. This means to prove a theorem, we are effectively finding a function whose type corresponding to the theorem(proposition)!
+
+To find such a program, more detailed isomorphism between two fields are formalized, as depicted in Table \ref{tab:chi_tbl}. Note, for the program, the author will use the \emph{Haskell} syntax\footnote{Actually, functional programming is one of the outcome of \emph{The Curry-Howard Isomorphism}, and \emph{Haskell} is a popular and versatile pure functional language.}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|r|r|}
+\hline
+\textbf{Formal Logic}  & \textbf{Haskell Program} \\
+\hline
+universal quantifier($\forall$) & generalized product type($\Pi$) \\
+\hline
+existential quantifier($\exists$) & generalized sum type($\Sigma$) \\
+\hline
+implication($\leftarrow$) & function type($ func :: a \rightarrow b $) \\
+\hline
+conjunction($\wedge$) & product type($(a, b)$) \\
+\hline
+disjunction($\vee$) & sum type($data\ Either\ a\ b$) \\
+\hline
+\emph{True} clause & unit type \\
+\hline
+\emph{False} clause & bottom type \\
+\hline
+\end{tabular}
+\caption{The correspondence between formal logic and programs}\label{tab:chi_tbl}
+\end{table}
+
+So from this fact, recall our definition of \emph{First-Order Logic} program in Section \ref{fol_def_sec}, the $T_{\mathcal{P}}$ of the clause  
+
+\begin{center}	
+$A \leftarrow L_1, L_2, ..., L_n$, $n \ge 0$\\
+\end{center}
+
+\noindent
+is equivalent to define a \emph{Haskell}  function:
+
+\begin{center}	
+$ foo :: (L_1, L_2, ..., L_n) \rightarrow A $ 
+\end{center}
+
+\noindent
+where  ``::" means ``has type of...".
+
+Literally, this function means ``\emph{Find a function $foo$, which accpts a sequence of arguments of type $L_1, L_2, ..., L_n$, respectively, and return a type of $A$}". Then here comes a new question: 
+
+\begin{center}	
+\emph{How to represent such a function in a connectionist model?}
+\end{center}
+
+The answer comes from the analogy between \emph{functional programming} and neural networks.
+
+\subsection{The Functional Programming Perspective of Neural Networks}
+
+One distinctive perspective proposed in \cite{olah2015neural} is to draw analogy bwtween neural networks and \emph{functional programming}. To quote the narrative in that article:
+
+\begin{quote}	
+\emph{With every layer, neural networks transform data, molding it into a form that makes their task easier to do. We call these transformed versions of data "representations.” Representations correspond to types. ...Just as two functions can only be composed together if their types agree, two layers can only be
+composed together when their representations agree.}
+\end{quote}
+
+\emph{Compositionality} is of key importance to \emph{functional programming}\cite{hughes1989functional}. So the keen insight of  \cite{olah2015neural} is that
+it captures the \emph{Compositionality} of layers of neural networks(which we've asserted that it is also key to the success of neural networks in Section \ref{efficiency_of_nn_sec}) is equivalent to the \emph{composition} of functions in \emph{functional programming}.
+
+More than that, \cite{olah2015neural} further points that "\emph{neural network patterns are just higher order functions – that is, functions which take functions as arguments}". That means some common \emph{nerual netwrok patterns} works just like building block for composing a more complex networks. For example, an \emph{Encoding RNN}(Figure \ref{fig:encoding_rnn}) is just like the \emph{foldl} function in \emph{Haskell}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.6\textwidth]{encoding_rnn.png}
+\caption{An Encoding RNN, which is like the $foldl :: (b \rightarrow a \rightarrow b) \rightarrow b \rightarrow [a] \rightarrow b$ in \emph{Haskell}, which accpets \emph{three} arguments:  one \emph{function}, one \emph{accumulator}, and one \emph{array}. What it does is quite simple: iterating this array, applying the function to every element of the array, and accumulating the result into the \emph{accumulator}, and finally returning the \emph{accumulator}. This is what exactly a RNN is doing: recurrently comsue a sequence of input and \emph{fold} into the final outcome. }
+\label{fig:encoding_rnn}
+\end{figure}
+
+\subsection{The Final Approach}
+
+So compare the function \emph{foo} with \emph{foldl}, we can just encode \emph{foo} in \emph{foldl}:
+
+\begin{center}	
+$ foo = foldl\ and\ True\  (L_1, L_2, ..., L_n)$
+\end{center}
+
+Accordingly, we can encode this \emph{logic program clause} in a RNN!  So the final encoding of the logic program can be a ensemble of RNNs. Specifically, if a term in the \emph{body} of is a \emph{ground atom}, it is just like we have a constant RNN input;  if a term in the \emph{body} is a \emph{predicate symbol}, it is another RNN, and we just connect its output to this RNN.
+
+The benifits of this approach are:
+
+\begin{enumerate}[noitemsep]
+\item We get rid of constraint of \emph{acyclic programs}.
+\item We can encode any \emph{logic program} in a bottom-up compositional way, following a definite procedure, which may be learned by a \emph{Meta-Learning} system.
+\item We have discussed in Section \ref{schematic_sec} that the \emph{Representation} and \emph{Extraction} phases are kind of duality. Using this compositional method, we are assumed to easily \emph{decompose} the structure, that is, to distill the newly-learned knowledge in the connectionist model to symbolic forms: some new proposition! This direction worths future research.
+\end{enumerate}
+
+
+\section{Conclusions}\label{conclusion_sec}
+
+In this article we discuss in deatil the merits of neural networks(the connectionist model) and the limitations of symbolic systems, and to combine the strength and weakness of both system, we also discussed the challenges, and the approaches to address them. We propose a new approach to instill the symbolic knowledge into connectionist models, inspired by the analogy between the \emph{formal logic} and \emph{programming}, and the analogy between \emph{functional programming} and \emph{neural networks}. The author believes that his transitive  isomorphism shed light on the future research on this \emph{Neural-Symbolic Integration}. However, we still lack empirical research for this approach, and it remains to be seen the real stregnth and problem of this approach.
+
+{\footnotesize \bibliographystyle{acm}
+\bibliography{ref}}
+
+
+
+
+\end{document}
